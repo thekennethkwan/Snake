@@ -4,19 +4,19 @@ import random
 
 pygame.init()
 
-# Screen setup
+# Screen configuration
 width, height = 800, 600
 cellSize = 25
 gridW = width // cellSize
 gridH = height // cellSize
 screen = pygame.display.set_mode((width, height))
-pygame.display.set_caption("Snake")
+pygame.display.set_caption("Snake Game")
 
 # Colors
-black = pygame.Color(0, 0, 0)   # Background
-white = pygame.Color(255, 255, 255) # Food
-red = pygame.Color(255, 0, 0)   # Snake 1 (Player)
-green = pygame.Color(0, 255, 0) # Snake 2 (AI)
+black = pygame.Color(0, 0, 0)
+white = pygame.Color(255, 255, 255)
+red = pygame.Color(255, 0, 0)
+green = pygame.Color(0, 255, 0)
 
 # Directions
 up = (0, -1)
@@ -27,28 +27,26 @@ right = (1, 0)
 class Snake:
     def __init__(self, color, controls):
         self.color = color
-        self.pos = [self.randPos()]
-        self.direction = random.choice([up, down, left, right])
         self.controls = controls
+        self.pos = [self.randPos()]
+        self.direction = right  # Start moving to the right by default
 
     def randPos(self):
-        return (random.randint(0, gridW - 1), random.randint(0, gridH - 1))
-    
+        return (random.randint(5, gridW - 5), random.randint(5, gridH - 5))
+
     def move(self):
         head = self.pos[0]
-        dx, dy = self.direction
-        new_head = ((head[0] + dx) % gridW, (head[1] + dy) % gridH)
-        if new_head in self.pos[1:]:
-            display_game_over()
-        else:
-            self.pos.insert(0, new_head)
+        new_head = ((head[0] + self.direction[0]) % gridW, (head[1] + self.direction[1]) % gridH)
+        self.pos.insert(0, new_head)
+        if len(self.pos) > 1:  # Avoid tail eating immediately after start
             self.pos.pop()
 
     def change_direction(self, key):
         if key in self.controls:
             new_dir = self.controls[key]
-            # Prevent reversing
-            if len(self.pos) > 1 and (self.pos[0][0] + new_dir[0], self.pos[0][1] + new_dir[1]) != self.pos[1]:
+            if len(self.pos) > 1 and new_dir == (-self.direction[0], -self.direction[1]):
+                print("Reverse direction attempt blocked.")
+            else:
                 self.direction = new_dir
 
     def grow(self):
@@ -66,15 +64,16 @@ class AISnake(Snake):
     def move(self):
         head_x, head_y = self.pos[0]
         food_x, food_y = self.food.pos
-        # Simple AI to chase food
-        if head_x < food_x:
+
+        if head_x < food_x and (len(self.pos) == 1 or not (head_x + 1, head_y) == self.pos[1]):
             self.direction = right
-        elif head_x > food_x:
+        elif head_x > food_x and (len(self.pos) == 1 or not (head_x - 1, head_y) == self.pos[1]):
             self.direction = left
-        elif head_y < food_y:
+        elif head_y < food_y and (len(self.pos) == 1 or not (head_x, head_y + 1) == self.pos[1]):
             self.direction = down
-        elif head_y > food_y:
+        elif head_y > food_y and (len(self.pos) == 1 or not (head_x, head_y - 1) == self.pos[1]):
             self.direction = up
+
         super().move()
 
 class Food:
@@ -82,7 +81,7 @@ class Food:
         self.pos = self.randPos()
 
     def randPos(self):
-        return (random.randint(0, gridW - 1), random.randint(0, gridH - 1))
+        return (random.randint(0, gridW - 5), random.randint(0, gridH - 5))
 
     def draw(self):
         pygame.draw.rect(screen, white, (self.pos[0] * cellSize, self.pos[1] * cellSize, cellSize, cellSize))
@@ -96,6 +95,7 @@ def display_game_over():
     pygame.display.flip()
     time.sleep(2)
     pygame.quit()
+    exit()
 
 def main():
     clock = pygame.time.Clock()
@@ -120,14 +120,16 @@ def main():
         player_snake.move()
         ai_snake.move()
 
-        screen.fill(black)
         if player_snake.pos[0] == food.pos:
             player_snake.grow()
-            food.pos = food.randPos()
+            food = Food()
+            ai_snake.food = food
         elif ai_snake.pos[0] == food.pos:
             ai_snake.grow()
-            food.pos = food.randPos()
+            food = Food()
+            ai_snake.food = food
 
+        screen.fill(black)
         player_snake.draw()
         ai_snake.draw()
         food.draw()
