@@ -9,11 +9,13 @@ from Menu import show_menu # game menu
 pygame.init()
 
 # Screen configuration
+# Screen configuration
 width, height = 800, 600
 cellSize = 25
 gridW = width // cellSize #32
 gridH = height // cellSize #24
 screen = pygame.display.set_mode((width, height))
+pygame.display.set_caption("Snake Game")
 pygame.display.set_caption("Snake Game")
 
 # Colors
@@ -35,7 +37,9 @@ right = (1, 0)
 
 class Snake:
     def __init__(self, color, controls):
+    def __init__(self, color, controls):
         self.color = color
+        self.controls = controls
         self.controls = controls
         self.pos = [self.randPos()]
         self.direction = random.choice([up, down, left, right])
@@ -44,12 +48,23 @@ class Snake:
     def randPos(self):
         return (random.randint(5, gridW - 5), random.randint(5, gridH - 5))
 
+        return (random.randint(5, gridW - 5), random.randint(5, gridH - 5))
+
     def move(self):
         head = self.pos[0]
+        new_head = ((head[0] + self.direction[0]) % gridW, (head[1] + self.direction[1]) % gridH)
         new_head = ((head[0] + self.direction[0]) % gridW, (head[1] + self.direction[1]) % gridH)
         self.pos.insert(0, new_head)
         if len(self.pos) > 1:
             self.pos.pop()
+
+    def change_direction(self, key):
+        if key in self.controls:
+            new_dir = self.controls[key]
+            if len(self.pos) > 1 and new_dir == (-self.direction[0], -self.direction[1]):
+                print("Reverse direction attempt blocked.")
+            else:
+                self.direction = new_dir
 
     def change_direction(self, key):
         if key in self.controls:
