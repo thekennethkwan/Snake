@@ -4,14 +4,14 @@ import heapq
 import time
 import random
 
-from Menu import show_menu # game menu 
+from Menu import show_menu  # game menu
 
 # Screen configuration
 # Screen configuration
 width, height = 800, 600
 cellSize = 25
-gridW = width // cellSize #32
-gridH = height // cellSize #24
+gridW = width // cellSize  # 32
+gridH = height // cellSize  # 24
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Snake Game")
 pygame.display.set_caption("Snake Game")
@@ -32,6 +32,7 @@ up = (0, -1)
 down = (0, 1)
 left = (-1, 0)
 right = (1, 0)
+
 
 class Snake:
     def __init__(self, color, controls):
@@ -81,9 +82,12 @@ class Snake:
     def draw(self):
         for segment in self.pos:
             pygame.draw.rect(screen, self.color, (segment[0] * cellSize, segment[1] * cellSize, cellSize, cellSize))
+
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN and event.key in self.controls:
             self.change_direction(event.key)
+
+
 class AISnake(Snake):
     def __init__(self, color, food, player):
         super().__init__(color, {})
@@ -140,6 +144,7 @@ class AISnake(Snake):
 
         super().move()
 
+
 class Food:
     def __init__(self, snakes):
         self.snakes = snakes
@@ -154,6 +159,7 @@ class Food:
 
     def draw(self):
         pygame.draw.rect(screen, white, (self.pos[0] * cellSize, self.pos[1] * cellSize, cellSize, cellSize))
+
 
 class Freeze_Power:
     def __init__(self, snakes):
@@ -170,6 +176,7 @@ class Freeze_Power:
     def draw(self):
         pygame.draw.rect(screen, blue, (self.pos[0] * cellSize, self.pos[1] * cellSize, cellSize, cellSize))
 
+
 class Double_Power:
     def __init__(self, snakes):
         self.snakes = snakes
@@ -185,6 +192,7 @@ class Double_Power:
     def draw(self):
         pygame.draw.rect(screen, yellow, (self.pos[0] * cellSize, self.pos[1] * cellSize, cellSize, cellSize))
 
+
 class Tele_Power:
     def __init__(self):
         self.pos = self.randPos()
@@ -194,6 +202,7 @@ class Tele_Power:
 
     def draw(self):
         pygame.draw.rect(screen, orange, (self.pos[0] * cellSize, self.pos[1] * cellSize, cellSize, cellSize))
+
 
 class Wall:
     def __init__(self):
@@ -215,6 +224,8 @@ def display_game_over(screen):
     screen.blit(game_over_surface, game_over_rect)
     pygame.display.flip()
     time.sleep(2)  # Pause to show the message
+    pygame.quit()
+    exit()
 
 def display_game_won(screen):
     my_font = pygame.font.SysFont('times new roman', 90)
@@ -224,6 +235,8 @@ def display_game_won(screen):
     screen.blit(game_over_surface, game_over_rect)
     pygame.display.flip()
     time.sleep(2)  # Pause to show the message
+    pygame.quit()
+    exit()
 
 
 def game_over_condition(player_snake, wall):
@@ -231,17 +244,19 @@ def game_over_condition(player_snake, wall):
     head = player_snake.pos[0]
     if head in player_snake.pos[1:]:
         return True
-    
+
     # Check if the snake's head hits the boundary or wall
     if head[0] < 1 or head[0] > gridW - 2 or head[1] < 1 or head[1] > gridH - 2:
         return True
     return False
+
 
 def game_won_condition(player_snake, winning_score):
     # Assuming each food increases the snake's length by 1 and winning score is based on length
     if len(player_snake.pos) >= winning_score:
         return True
     return False
+
 
 def gameAI():
     clock = pygame.time.Clock()
@@ -264,7 +279,6 @@ def gameAI():
     for snake in snakes:
         if isinstance(snake, AISnake):
             snake.food = food
-
 
     UNFREEZE = pygame.USEREVENT + 1
     DOUBLE = pygame.USEREVENT + 2
@@ -290,24 +304,25 @@ def gameAI():
 
         # check if player hits a wall
         if wall.wallUp:
-            if player_snake.pos[0][1] < 1 or player_snake.pos[0][1] > 22 or player_snake.pos[0][0] < 1 or player_snake.pos[0][0] > 30:
+            if player_snake.pos[0][1] < 1 or player_snake.pos[0][1] > 22 or player_snake.pos[0][0] < 1 or \
+                    player_snake.pos[0][0] > 30:
                 display_game_over(screen)
 
         # check for if power is active
         if ai_snake.canmove:
             ai_snake.move()
-       # Freeze time Powerup
+        # Freeze time Powerup
         if player_snake.pos[0] == fr_power.pos:
             ai_snake.canmove = False
             fr_power = Freeze_Power(snakes)
             pygame.time.set_timer(UNFREEZE, 2000, loops=0)
-        #Double growth powerup
+        # Double growth powerup
         if player_snake.pos[0] == dbl_power.pos:
             player_snake.color = purple
             player_snake.double = True
             dbl_power = Double_Power(snakes)
             pygame.time.set_timer(DOUBLE, 3500, loops=0)
-        #Teleport powerup
+        # Teleport powerup
         if player_snake.pos[0] == tele_power.pos:
             wall.color = orange
             wall.wallUp = False
@@ -324,12 +339,12 @@ def gameAI():
             ai_snake.food = food
 
         for segment in ai_snake.pos:
-            if player_snake.pos[0]  == (segment[0], segment[1]):
+            if player_snake.pos[0] == (segment[0], segment[1]):
                 display_game_over(screen)
 
         for segment in player_snake.pos:
             if ai_snake.pos[0] == (segment[0], segment[1]):
-                display_game_won(scren)
+                display_game_won(screen)
 
         for segment in player_snake.pos[2:]:
             if player_snake.pos[0] == (segment[0], segment[1]):
@@ -344,13 +359,15 @@ def gameAI():
         tele_power.draw()
         wall.draw()
         my_font = pygame.font.SysFont('times new roman', 20)
-        game_over_surface = my_font.render(f'player length: {len(player_snake.pos)}   AI length: {len(ai_snake.pos)}', True, white)
+        game_over_surface = my_font.render(f'player length: {len(player_snake.pos)}   AI length: {len(ai_snake.pos)}',
+                                           True, white)
         game_over_rect = game_over_surface.get_rect()
         game_over_rect.midtop = (140, 1)
         screen.blit(game_over_surface, game_over_rect)
 
         pygame.display.flip()
         clock.tick(15)
+
 
 def gameTwoPlayers():
     clock = pygame.time.Clock()
@@ -359,11 +376,10 @@ def gameTwoPlayers():
 
     player1_controls = {pygame.K_w: up, pygame.K_s: down, pygame.K_a: left, pygame.K_d: right}
     player2_controls = {pygame.K_UP: up, pygame.K_DOWN: down, pygame.K_LEFT: left, pygame.K_RIGHT: right}
-    
+
     player_snake_1 = Snake(red, player1_controls)
     player_snake_2 = Snake(blue, player2_controls)
     snakes = [player_snake_1, player_snake_2]
-
 
     fr_power = Freeze_Power(snakes)
     dbl_power = Double_Power(snakes)
@@ -394,7 +410,7 @@ def gameTwoPlayers():
                     snake.change_direction(event.key)
 
         for snake in snakes:
-            if snake.canmove:   # Check if snake frozen
+            if snake.canmove:  # Check if snake frozen
                 snake.move()
 
             # check if player hits a wall
@@ -403,19 +419,19 @@ def gameTwoPlayers():
                     display_game_over(screen)
 
             other_snakes = [s for s in snakes if s != snake]
-        # Freeze time Powerup
+            # Freeze time Powerup
             if snake.pos[0] == fr_power.pos:
                 for other_snake in other_snakes:
                     other_snake.canmove = False
                 fr_power = Freeze_Power(snakes)
                 pygame.time.set_timer(UNFREEZE, 2000, loops=0)
-            #Double growth powerup
+            # Double growth powerup
             if snake.pos[0] == dbl_power.pos:
                 snake.color = purple
                 snake.double = True
                 dbl_power = Double_Power(snakes)
                 pygame.time.set_timer(DOUBLE, 3500, loops=0)
-            #Teleport powerup
+            # Teleport powerup
             if snake.pos[0] == tele_power.pos:
                 wall.color = orange
                 wall.wallUp = False
@@ -440,16 +456,16 @@ def gameTwoPlayers():
         tele_power.draw()
         wall.draw()
         my_font = pygame.font.SysFont('times new roman', 20)
-        game_over_surface = my_font.render(f' Player 1 length: {len(player_snake_1.pos)}   Player 2 length: {len(player_snake_2.pos)}', True, white)
+        game_over_surface = my_font.render(
+            f' Player 1 length: {len(player_snake_1.pos)}   Player 2 length: {len(player_snake_2.pos)}', True, white)
         game_over_rect = game_over_surface.get_rect()
         game_over_rect.midtop = (140, 1)
         screen.blit(game_over_surface, game_over_rect)
 
         pygame.display.flip()
         clock.tick(15)
-        
-    
-    
+
+
 def main():
     pygame.init()
     clock = pygame.time.Clock()
@@ -464,6 +480,7 @@ def main():
         gameAI()
     elif mode == "Two Players":
         gameTwoPlayers()
+
 
 if __name__ == "__main__":
     main()  # Start the main game loop
