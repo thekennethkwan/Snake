@@ -33,7 +33,7 @@ class Snake:
     def __init__(self, color, controls):
         self.color = color
         self.controls = controls
-        self.pos = [(3, 12)]
+        self.pos = [self.randPos()]
         self.direction = right  # Start moving to the right by default
         self.double = False
 
@@ -149,6 +149,18 @@ def display_game_over():
     pygame.quit()
     exit()
 
+def display_game_won():
+    my_font = pygame.font.SysFont('times new roman', 90)
+    game_over_surface = my_font.render('You Win!', True, white)
+    game_over_rect = game_over_surface.get_rect()
+    game_over_rect.midtop = (width / 2, height / 4)
+    screen.blit(game_over_surface, game_over_rect)
+    pygame.display.flip()
+    time.sleep(2)
+    pygame.quit()
+    exit()
+
+
 def main():
     clock = pygame.time.Clock()
     food = Food()
@@ -186,15 +198,15 @@ def main():
 
         player_snake.move()
 
-        #check if player hits a wall
+        # check if player hits a wall
         if wall.wallUp:
             if player_snake.pos[0][1] < 1 or player_snake.pos[0][1] > 22 or player_snake.pos[0][0] < 1 or player_snake.pos[0][0] > 30:
                 display_game_over()
 
-        #check for if power is active
+        # check for if power is active
         if ai_snake.canmove:
             ai_snake.move()
-       #Freeze time Powerup
+       # Freeze time Powerup
         if player_snake.pos[0] == fr_power.pos:
             ai_snake.canmove = False
             fr_power = Freeze_Power()
@@ -221,6 +233,18 @@ def main():
             food = Food()
             ai_snake.food = food
 
+        for segment in ai_snake.pos:
+            if player_snake.pos[0]  == (segment[0], segment[1]):
+                display_game_over()
+
+        for segment in player_snake.pos:
+            if ai_snake.pos[0] == (segment[0], segment[1]):
+                display_game_won()
+
+        for segment in player_snake.pos[2:]:
+            if player_snake.pos[0] == (segment[0], segment[1]):
+                display_game_over()
+
         screen.fill(black)
         player_snake.draw()
         ai_snake.draw()
@@ -229,6 +253,11 @@ def main():
         dbl_power.draw()
         tele_power.draw()
         wall.draw()
+        my_font = pygame.font.SysFont('times new roman', 20)
+        game_over_surface = my_font.render(f'player length: {len(player_snake.pos)}   AI length: {len(ai_snake.pos)}', True, white)
+        game_over_rect = game_over_surface.get_rect()
+        game_over_rect.midtop = (140, 1)
+        screen.blit(game_over_surface, game_over_rect)
 
         pygame.display.flip()
         clock.tick(15)
