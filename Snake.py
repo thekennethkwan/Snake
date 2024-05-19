@@ -34,7 +34,7 @@ class Snake:
         self.color = color
         self.controls = controls
         self.pos = [self.randPos()]
-        self.direction = right  # Start moving to the right by default
+        self.direction = random.choice([up, down, left, right]) # Random start direction
         self.double = False
 
     def randPos(self):
