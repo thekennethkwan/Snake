@@ -6,8 +6,10 @@ import random
 
 from Menu import show_menu # game menu 
 
-# Initialize Pygame and set up the display
 pygame.init()
+
+# Screen configuration
+# Screen configuration
 width, height = 800, 600
 cellSize = 25
 gridW = width // cellSize #32
@@ -35,11 +37,12 @@ right = (1, 0)
 # Snake class handles snake properties and methods
 class Snake:
     def __init__(self, color, controls):
+        self.ogColor = color
         self.color = color
         self.controls = controls
         self.pos = [self.randPos()]
         self.direction = random.choice([up, down, left, right])
-        self.double = False  # Whether the snake should grow double
+        self.double = False
 
     def randPos(self):
         """Generate a random position within grid bounds."""
@@ -162,12 +165,10 @@ class Food:
 # Power-up and wall implementations follow similar structure: initialize, determine position, and draw.
 class Freeze_Power:
     def __init__(self):
-        """Create a freeze power-up at a random location."""
         self.pos = self.randPos()
 
     
     def randPos(self):
-        """Randomize position avoiding edges."""
         return (random.randint(1, gridW - 5), random.randint(1, gridH - 5))
 
     def draw(self):
@@ -177,11 +178,9 @@ class Freeze_Power:
 
 class Double_Power:
     def __init__(self):
-        """Initialize a double growth power-up by setting its position randomly on the game field."""
         self.pos = self.randPos()
 
     def randPos(self):
-        """Generate a random position for the double growth power-up, ensuring it does not spawn on the edge of the game field."""
         return (random.randint(1, gridW - 5), random.randint(1, gridH - 5))
 
     def draw(self):
@@ -255,7 +254,6 @@ def game_won_condition(player_snake, winning_score):
     return False
 
 def game_loop(screen, clock, snakes, food, fr_power, dbl_power, tele_power, wall):
-    """Main game loop handling events, updates, and rendering."""
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -276,16 +274,14 @@ def game_loop(screen, clock, snakes, food, fr_power, dbl_power, tele_power, wall
         wall.draw()
 
         pygame.display.flip()
-        clock.tick(15) # Limit frames per second
+        clock.tick(15)
         
 def main():
-    # Initialize all necessary pygame modules and set up the main display window
     pygame.init()
     screen = pygame.display.set_mode((width, height))
     clock = pygame.time.Clock()
 
-    # Display the game menu and capture the selected game mode
-    mode = show_menu(screen, clock)  
+    mode = show_menu(screen, clock)  # Get the selected game mode from the menu
     if mode == "Quit":
         pygame.quit()
         return
@@ -311,7 +307,6 @@ def main():
     tele_power = Tele_Power()
     wall = Wall()
 
-    # Ensure AI snake knows where the food is
     for snake in snakes:
         if isinstance(snake, AISnake):
             snake.food = food
@@ -324,8 +319,6 @@ def main():
     }
     player_snake = Snake(red, player_controls)
     ai_snake = AISnake(green, food, player_snake)
-
-    # Game event identifiers
     UNFREEZE = pygame.USEREVENT + 1
     DOUBLE = pygame.USEREVENT + 2
     TELEPORT = pygame.USEREVENT + 3
@@ -334,8 +327,9 @@ def main():
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                pygame.quit()
                 return
-            # Handle keypresses
+            
             elif event.type == pygame.KEYDOWN:
                 player_snake.change_direction(event.key)
             # Handle custom events    
@@ -350,20 +344,18 @@ def main():
             for snake in snakes:
                 if event.type == pygame.KEYDOWN:
                     snake.change_direction(event.key)
-
-        # Update and render game objects
         for snake in snakes:
             snake.move()
             # Check for collision with food
             if snake.pos[0] == food.pos:
                 snake.grow()
                 food = Food(snakes)  # Respawn food with updated snake positions
-            snake.draw()
+        
 
         # check if player hits a wall
         if wall.wallUp:
             if player_snake.pos[0][1] < 1 or player_snake.pos[0][1] > 22 or player_snake.pos[0][0] < 1 or player_snake.pos[0][0] > 30:
-                display_game_over()
+                display_game_over(screen)
 
         # # Process power-up effects amd check for if power is active
         if ai_snake.canmove:
@@ -388,29 +380,29 @@ def main():
 
         if player_snake.pos[0] == food.pos:
             player_snake.grow()
-            food = Food()
+            food = Food(snakes)
             ai_snake.food = food
         elif ai_snake.pos[0] == food.pos:
             ai_snake.grow()
-            food = Food()
+            food = Food(snakes)
             ai_snake.food = food
         # Handle game over and winning conditions
         for segment in ai_snake.pos:
             if player_snake.pos[0]  == (segment[0], segment[1]):
-                display_game_over()
+                display_game_over(screen)
 
         for segment in player_snake.pos:
             if ai_snake.pos[0] == (segment[0], segment[1]):
-                display_game_won()
+                display_game_won(scren)
 
         for segment in player_snake.pos[2:]:
             if player_snake.pos[0] == (segment[0], segment[1]):
                 display_game_over()
 
-        # Clear the screen and fill it with the background color
+        
         screen.fill(black)
-
-        # Draw all game elements to the screen buffer
+        for snake in snakes:
+            snake.draw()
         player_snake.draw()
         ai_snake.draw()
         food.draw()
@@ -425,23 +417,39 @@ def main():
         game_over_rect = game_over_surface.get_rect()
         game_over_rect.midtop = (140, 1)
         screen.blit(game_over_surface, game_over_rect)
-        game_loop(screen, clock, snakes, food, fr_power, dbl_power, tele_power, wall)
+
         pygame.display.flip()
         clock.tick(15)
 
         # Returns to main menu if game over
-        if game_over_condition(snake, wall):
+        # Check game over conditions
+        if game_over_condition:
             display_game_over(screen)
-            break  
+            break  # Exit this loop to go back to the menu loop
 
-        # Assuming winning score is 10 to win
-        if game_won_condition(snake):  
+        # Similar handling for game won
+        if game_won_condition:
             display_game_won(screen)
-            break  
-       
+            break  # Exit this loop to go back to the menu loop
+        # Start the game loop
         
         
-        
+    
+    
+def main():
+    pygame.init()
+    clock = pygame.time.Clock()
+
+    mode = show_menu(screen, clock)  # Get the selected game mode from the menu
+    if mode == "Quit":
+        pygame.quit()
+        return
+
+    # Call the appropriate function based on the selected game mode
+    if mode == "Single Player vs AI":
+        gameAI()
+    elif mode == "Two Players":
+        gameTwoPlayers()
 
 if __name__ == "__main__":
     main()  # Start the main game loop
