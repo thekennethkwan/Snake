@@ -245,8 +245,6 @@ def game_won_condition(player_snake, winning_score):
 
 def gameAI():
     clock = pygame.time.Clock()
-    fr_power = Freeze_Power()
-    dbl_power = Double_Power()
     tele_power = Tele_Power()
     wall = Wall()
     player_controls = {
@@ -258,7 +256,11 @@ def gameAI():
     player_snake = Snake(red, player_controls)
     ai_snake = AISnake(green, None, player_snake)
     snakes = [player_snake, ai_snake]
+
+    fr_power = Freeze_Power(snakes)
+    dbl_power = Double_Power(snakes)
     food = Food(snakes)
+
     for snake in snakes:
         if isinstance(snake, AISnake):
             snake.food = food
@@ -297,13 +299,13 @@ def gameAI():
        # Freeze time Powerup
         if player_snake.pos[0] == fr_power.pos:
             ai_snake.canmove = False
-            fr_power = Freeze_Power()
+            fr_power = Freeze_Power(snakes)
             pygame.time.set_timer(UNFREEZE, 2000, loops=0)
         #Double growth powerup
         if player_snake.pos[0] == dbl_power.pos:
             player_snake.color = purple
             player_snake.double = True
-            dbl_power = Double_Power()
+            dbl_power = Double_Power(snakes)
             pygame.time.set_timer(DOUBLE, 3500, loops=0)
         #Teleport powerup
         if player_snake.pos[0] == tele_power.pos:
@@ -396,47 +398,49 @@ def gameTwoPlayers():
                 snake.move()
 
             # check if player hits a wall
-        if wall.wallUp:
-            if snake.pos[0][1] < 1 or snake.pos[0][1] > 22 or snake.pos[0][0] < 1 or snake.pos[0][0] > 30:
-                display_game_over(screen)
-
-        other_snakes = [s for s in snakes if s != snake]
-       # Freeze time Powerup
-        if snake.pos[0] == fr_power.pos:
-            for other_snake in other_snakes:
-                other_snake.canmove = False
-            fr_power = Freeze_Power(snakes)
-            pygame.time.set_timer(UNFREEZE, 2000, loops=0)
-        #Double growth powerup
-        if snake.pos[0] == dbl_power.pos:
-            snake.color = purple
-            snake.double = True
-            dbl_power = Double_Power(snakes)
-            pygame.time.set_timer(DOUBLE, 3500, loops=0)
-        #Teleport powerup
-        if snake.pos[0] == tele_power.pos:
-            wall.color = orange
-            wall.wallUp = False
-            tele_power = Tele_Power()
-            pygame.time.set_timer(TELEPORT, 5000, loops=0)
-
-        if snake.pos[0] == food.pos:
-            snake.grow()
-            food = Food(snakes)
-
-        for snake in other_snakes:
-            for segment in snake.pos[2:]:
-                if snake.pos[0] == (segment[0], segment[1]):
+            if wall.wallUp:
+                if snake.pos[0][1] < 1 or snake.pos[0][1] > 22 or snake.pos[0][0] < 1 or snake.pos[0][0] > 30:
                     display_game_over(screen)
 
+            other_snakes = [s for s in snakes if s != snake]
+        # Freeze time Powerup
+            if snake.pos[0] == fr_power.pos:
+                for other_snake in other_snakes:
+                    other_snake.canmove = False
+                fr_power = Freeze_Power(snakes)
+                pygame.time.set_timer(UNFREEZE, 2000, loops=0)
+            #Double growth powerup
+            if snake.pos[0] == dbl_power.pos:
+                snake.color = purple
+                snake.double = True
+                dbl_power = Double_Power(snakes)
+                pygame.time.set_timer(DOUBLE, 3500, loops=0)
+            #Teleport powerup
+            if snake.pos[0] == tele_power.pos:
+                wall.color = orange
+                wall.wallUp = False
+                tele_power = Tele_Power()
+                pygame.time.set_timer(TELEPORT, 5000, loops=0)
+
+            if snake.pos[0] == food.pos:
+                snake.grow()
+                food = Food(snakes)
+
+            for snake in other_snakes:
+                for segment in snake.pos[2:]:
+                    if snake.pos[0] == (segment[0], segment[1]):
+                        display_game_over(screen)
+
         screen.fill(black)
+        for snake in snakes:
+            snake.draw()
         food.draw()
         fr_power.draw()
         dbl_power.draw()
         tele_power.draw()
         wall.draw()
         my_font = pygame.font.SysFont('times new roman', 20)
-        game_over_surface = my_font.render(f'player length: {len(player_snake_1.pos)}   AI length: {len(player_snake_2.pos)}', True, white)
+        game_over_surface = my_font.render(f' Player 1 length: {len(player_snake_1.pos)}   Player 2 length: {len(player_snake_2.pos)}', True, white)
         game_over_rect = game_over_surface.get_rect()
         game_over_rect.midtop = (140, 1)
         screen.blit(game_over_surface, game_over_rect)
