@@ -33,7 +33,7 @@ class Snake:
     def __init__(self, color, controls):
         self.color = color
         self.controls = controls
-        self.pos = [self.randPos()]
+        self.pos = [(3, 12)]
         self.direction = right  # Start moving to the right by default
         self.double = False
 
