@@ -1,7 +1,10 @@
+# Snake.py
 import pygame
 import heapq
 import time
 import random
+
+from Menu import show_menu # game menu 
 
 pygame.init()
 
@@ -35,7 +38,7 @@ class Snake:
         self.color = color
         self.controls = controls
         self.pos = [self.randPos()]
-        self.direction = random.choice([up, down, left, right]) # Random start direction
+        self.direction = random.choice([up, down, left, right])
         self.double = False
 
     def randPos(self):
@@ -45,7 +48,7 @@ class Snake:
         head = self.pos[0]
         new_head = ((head[0] + self.direction[0]) % gridW, (head[1] + self.direction[1]) % gridH)
         self.pos.insert(0, new_head)
-        if len(self.pos) > 1:  # Avoid tail eating immediately after start
+        if len(self.pos) > 1:
             self.pos.pop()
 
     def change_direction(self, key):
@@ -58,14 +61,15 @@ class Snake:
 
     def grow(self):
         self.pos.append(self.pos[-1])
-        #if double power is active, grow twice
         if self.double:
             self.pos.append(self.pos[-1])
 
     def draw(self):
         for segment in self.pos:
             pygame.draw.rect(screen, self.color, (segment[0] * cellSize, segment[1] * cellSize, cellSize, cellSize))
-
+    def handle_event(self, event):
+        if event.type == pygame.KEYDOWN and event.key in self.controls:
+            self.change_direction(event.key)
 class AISnake(Snake):
     def __init__(self, color, food, player):
         super().__init__(color, {})
@@ -76,7 +80,7 @@ class AISnake(Snake):
     def heuristic(self, pos):
         food = abs(pos[0] - self.food.pos[0]) + abs(pos[1] - self.food.pos[1])
         player = min(abs(pos[0] - p[0]) + abs(pos[1] - p[1]) for p in self.playerSnake.pos)
-        penalty = max(0, 10 - player)  # Penalty increases as the AI snake gets closer to the player snake
+        penalty = max(0, 10 - player)
         return food + penalty
 
     def aStar(self, start, goal):
@@ -95,7 +99,7 @@ class AISnake(Snake):
                     current = pathTo[current]
                     path.insert(0, current)
                 return path
-            
+
             openSet.remove(current)
             closedSet.add(current)
 
@@ -117,17 +121,22 @@ class AISnake(Snake):
     def move(self):
         path = self.aStar(self.pos[0], self.food.pos)
         if path and len(path) > 1:
-            step =  path[1]
+            step = path[1]
             self.direction = (step[0] - self.pos[0][0], step[1] - self.pos[0][1])
-        
+
         super().move()
 
 class Food:
-    def __init__(self):
+    def __init__(self, snakes):
+        self.snakes = snakes
         self.pos = self.randPos()
 
     def randPos(self):
-        return (random.randint(1, gridW - 5), random.randint(1, gridH - 5))
+        while True:
+            newPos = (random.randint(1, gridW - 5), random.randint(1, gridH - 5))
+            # Make sure food does not spawn on any snake
+            if not any(newPos in snake.pos for snake in self.snakes):
+                return newPos
 
     def draw(self):
         pygame.draw.rect(screen, white, (self.pos[0] * cellSize, self.pos[1] * cellSize, cellSize, cellSize))
@@ -174,36 +183,100 @@ class Wall:
         pygame.draw.rect(screen, self.color, (775, 0, cellSize, height))
 
 
-def display_game_over():
+def display_game_over(screen):
     my_font = pygame.font.SysFont('times new roman', 90)
     game_over_surface = my_font.render('Game Over', True, red)
     game_over_rect = game_over_surface.get_rect()
     game_over_rect.midtop = (width / 2, height / 4)
     screen.blit(game_over_surface, game_over_rect)
     pygame.display.flip()
-    time.sleep(2)
-    pygame.quit()
-    exit()
+    time.sleep(2)  # Pause to show the message
 
-def display_game_won():
+def display_game_won(screen):
     my_font = pygame.font.SysFont('times new roman', 90)
     game_over_surface = my_font.render('You Win!', True, white)
     game_over_rect = game_over_surface.get_rect()
     game_over_rect.midtop = (width / 2, height / 4)
     screen.blit(game_over_surface, game_over_rect)
     pygame.display.flip()
-    time.sleep(2)
-    pygame.quit()
-    exit()
+    time.sleep(2)  # Pause to show the message
 
 
+def game_over_condition(player_snake, wall):
+    # Check if the snake's head collides with any part of its body
+    head = player_snake.pos[0]
+    if head in player_snake.pos[1:]:
+        return True
+    
+    # Check if the snake's head hits the boundary or wall
+    if head[0] < 1 or head[0] > gridW - 2 or head[1] < 1 or head[1] > gridH - 2:
+        return True
+    return False
+
+def game_won_condition(player_snake, winning_score):
+    # Assuming each food increases the snake's length by 1 and winning score is based on length
+    if len(player_snake.pos) >= winning_score:
+        return True
+    return False
+
+def game_loop(screen, clock, snakes, food, fr_power, dbl_power, tele_power, wall):
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return
+            for snake in snakes:
+                if event.type == pygame.KEYDOWN:
+                    snake.change_direction(event.key)
+
+        # Update and draw all game elements
+        screen.fill(black)
+        for snake in snakes:
+            snake.move()
+            snake.draw()
+        food.draw()
+        fr_power.draw()
+        dbl_power.draw()
+        tele_power.draw()
+        wall.draw()
+
+        pygame.display.flip()
+        clock.tick(15)
+        
 def main():
+    pygame.init()
+    screen = pygame.display.set_mode((width, height))
     clock = pygame.time.Clock()
-    food = Food()
+
+    mode = show_menu(screen, clock)  # Get the selected game mode from the menu
+    if mode == "Quit":
+        pygame.quit()
+        return
+
+
+    # Initialize the snakes based on the mode
+    snakes = []
+    if mode == "Single Player vs AI":
+        player_controls = {pygame.K_UP: up, pygame.K_DOWN: down, pygame.K_LEFT: left, pygame.K_RIGHT: right}
+        player_snake = Snake(red, player_controls)
+        ai_snake = AISnake(green, None, player_snake)  # Temporarily set food to None
+        snakes = [player_snake, ai_snake]
+    elif mode == "Two Players":
+        player1_controls = {pygame.K_w: up, pygame.K_s: down, pygame.K_a: left, pygame.K_d: right}
+        player2_controls = {pygame.K_UP: up, pygame.K_DOWN: down, pygame.K_LEFT: left, pygame.K_RIGHT: right}
+        player_snake_1 = Snake(red, player1_controls)
+        player_snake_2 = Snake(blue, player2_controls)
+        snakes = [player_snake_1, player_snake_2]
+
+    food = Food(snakes)  # Initialize food with the list of snakes
     fr_power = Freeze_Power()
     dbl_power = Double_Power()
     tele_power = Tele_Power()
     wall = Wall()
+
+    for snake in snakes:
+        if isinstance(snake, AISnake):
+            snake.food = food
+
     player_controls = {
         pygame.K_UP: up,
         pygame.K_DOWN: down,
@@ -219,8 +292,8 @@ def main():
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
                 return
+            
             elif event.type == pygame.KEYDOWN:
                 player_snake.change_direction(event.key)
             elif event.type == UNFREEZE:
@@ -231,8 +304,16 @@ def main():
             elif event.type == TELEPORT:
                 wall.wallUp = True
                 wall.color = brown
-
-        player_snake.move()
+            for snake in snakes:
+                if event.type == pygame.KEYDOWN:
+                    snake.change_direction(event.key)
+        for snake in snakes:
+            snake.move()
+            # Check for collision with food
+            if snake.pos[0] == food.pos:
+                snake.grow()
+                food = Food(snakes)  # Respawn food with updated snake positions
+        
 
         # check if player hits a wall
         if wall.wallUp:
@@ -281,7 +362,10 @@ def main():
             if player_snake.pos[0] == (segment[0], segment[1]):
                 display_game_over()
 
+        
         screen.fill(black)
+        for snake in snakes:
+            snake.draw()
         player_snake.draw()
         ai_snake.draw()
         food.draw()
@@ -294,9 +378,24 @@ def main():
         game_over_rect = game_over_surface.get_rect()
         game_over_rect.midtop = (140, 1)
         screen.blit(game_over_surface, game_over_rect)
-
+        game_loop(screen, clock, snakes, food, fr_power, dbl_power, tele_power, wall)
         pygame.display.flip()
         clock.tick(15)
 
+        # Returns to main menu if game over
+        # Check game over conditions
+        if game_over_condition:
+            display_game_over(screen)
+            break  # Exit this loop to go back to the menu loop
+
+        # Similar handling for game won
+        if game_won_condition:
+            display_game_won(screen)
+            break  # Exit this loop to go back to the menu loop
+        # Start the game loop
+        
+        
+        
+
 if __name__ == "__main__":
-    main()
+    main()  # Start the main game loop
