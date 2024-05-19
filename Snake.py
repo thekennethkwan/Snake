@@ -1,4 +1,5 @@
 import pygame
+import heapq
 import time
 import random
 
@@ -66,24 +67,59 @@ class Snake:
             pygame.draw.rect(screen, self.color, (segment[0] * cellSize, segment[1] * cellSize, cellSize, cellSize))
 
 class AISnake(Snake):
-    def __init__(self, color, food):
+    def __init__(self, color, food, player):
         super().__init__(color, {})
         self.food = food
+        self.playerSnake = player
         self.canmove = True
 
+    def heuristic(self, pos):
+        food = abs(pos[0] - self.food.pos[0]) + abs(pos[1] - self.food.pos[1])
+        player = min(abs(pos[0] - p[0]) + abs(pos[1] - p[1]) for p in self.playerSnake.pos)
+        penalty = max(0, 10 - player)  # Penalty increases as the AI snake gets closer to the player snake
+        return food + penalty
+
+    def aStar(self, start, goal):
+        openSet = set()
+        closedSet = set()
+        gScore = {start: 0}
+        fScore = {start: self.heuristic(start)}
+        pathTo = {}
+
+        openSet.add(start)
+        while openSet:
+            current = min(openSet, key=lambda x: fScore[x])
+            if current == goal:
+                path = []
+                while current in pathTo:
+                    current = pathTo[current]
+                    path.insert(0, current)
+                return path
+            
+            openSet.remove(current)
+            closedSet.add(current)
+
+            for direction in [up, down, left, right]:
+                neighbor = ((current[0] + direction[0]) % gridW, (current[1] + direction[1]) % gridH)
+                if neighbor in closedSet or neighbor in self.pos[1:]:
+                    continue
+
+                tempgScore = gScore[current] + 1
+                if neighbor in gScore and tempgScore >= gScore[neighbor]:
+                    continue
+
+                pathTo[neighbor] = current
+                gScore[neighbor] = tempgScore
+                fScore[neighbor] = tempgScore + self.heuristic(neighbor)
+
+                openSet.add(neighbor)
+
     def move(self):
-        head_x, head_y = self.pos[0]
-        food_x, food_y = self.food.pos
-
-        if head_x < food_x and (len(self.pos) == 1 or not (head_x + 1, head_y) == self.pos[1]):
-             self.direction = right
-        elif head_x > food_x and (len(self.pos) == 1 or not (head_x - 1, head_y) == self.pos[1]):
-               self.direction = left
-        elif head_y < food_y and (len(self.pos) == 1 or not (head_x, head_y + 1) == self.pos[1]):
-             self.direction = down
-        elif head_y > food_y and (len(self.pos) == 1 or not (head_x, head_y - 1) == self.pos[1]):
-            self.direction = up
-
+        path = self.aStar(self.pos[0], self.food.pos)
+        if path and len(path) > 1:
+            step =  path[1]
+            self.direction = (step[0] - self.pos[0][0], step[1] - self.pos[0][1])
+        
         super().move()
 
 class Food:
@@ -175,7 +211,7 @@ def main():
         pygame.K_RIGHT: right
     }
     player_snake = Snake(red, player_controls)
-    ai_snake = AISnake(green, food)
+    ai_snake = AISnake(green, food, player_snake)
     UNFREEZE = pygame.USEREVENT + 1
     DOUBLE = pygame.USEREVENT + 2
     TELEPORT = pygame.USEREVENT + 3
