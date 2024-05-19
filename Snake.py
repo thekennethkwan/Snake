@@ -70,57 +70,57 @@ class AISnake(Snake):
     def __init__(self, color, food, player):
         super().__init__(color, {})
         self.food = food
-        self.playerSnake = player
+        self.player = player
         self.canmove = True
 
     def heuristic(self, pos):
-        food = abs(pos[0] - self.food.pos[0]) + abs(pos[1] - self.food.pos[1])
-        player = min(abs(pos[0] - p[0]) + abs(pos[1] - p[1]) for p in self.playerSnake.pos)
-        penalty = max(0, 10 - player)  # Penalty increases as the AI snake gets closer to the player snake
+        food = abs(pos[0] - self.food.pos[0]) + abs(pos[1] - self.food.pos[1])  # Manhattan distance to food
+        player = min(abs(pos[0] - p[0]) + abs(pos[1] - p[1]) for p in self.player.pos)  # Manhattan distance to player
+        penalty = max(0, 15 - player) # Penalty to avoid player
         return food + penalty
 
     def aStar(self, start, goal):
         openSet = set()
         closedSet = set()
-        gScore = {start: 0}
-        fScore = {start: self.heuristic(start)}
-        pathTo = {}
+        gScore = {start: 0} 
+        fScore = {start: self.heuristic(start)} 
+        pathTo = {} 
 
         openSet.add(start)
         while openSet:
-            current = min(openSet, key=lambda x: fScore[x])
-            if current == goal:
+            current = min(openSet, key=lambda x: fScore[x]) # Node with lowest fScore
+            if current == goal: # Goal reached
                 path = []
-                while current in pathTo:
+                while current in pathTo:    # Reconstruct path
                     current = pathTo[current]
                     path.insert(0, current)
                 return path
             
-            openSet.remove(current)
-            closedSet.add(current)
+            openSet.remove(current) # Remove current from openSet
+            closedSet.add(current)  # Add current to closedSet
 
             for direction in [up, down, left, right]:
-                neighbor = ((current[0] + direction[0]) % gridW, (current[1] + direction[1]) % gridH)
-                if neighbor in closedSet or neighbor in self.pos[1:]:
+                neighbor = ((current[0] + direction[0]) % gridW, (current[1] + direction[1]) % gridH)   
+                if neighbor in closedSet or neighbor in self.pos[1:]:   # Skip if neighbor is in closedSet or in itself
                     continue
 
                 tempgScore = gScore[current] + 1
-                if neighbor in gScore and tempgScore >= gScore[neighbor]:
+                if neighbor in gScore and tempgScore >= gScore[neighbor]:   # Skip if neighbor is already evaluated and has higher gScore
                     continue
 
-                pathTo[neighbor] = current
+                pathTo[neighbor] = current  
                 gScore[neighbor] = tempgScore
-                fScore[neighbor] = tempgScore + self.heuristic(neighbor)
+                fScore[neighbor] = tempgScore + self.heuristic(neighbor)    
 
-                openSet.add(neighbor)
+                openSet.add(neighbor)   # Add neighbor to openSet
 
     def move(self):
         path = self.aStar(self.pos[0], self.food.pos)
         if path and len(path) > 1:
             step =  path[1]
-            self.direction = (step[0] - self.pos[0][0], step[1] - self.pos[0][1])
+            self.direction = (step[0] - self.pos[0][0], step[1] - self.pos[0][1])   
         
-        super().move()
+        super().move()  
 
 class Food:
     def __init__(self):
