@@ -37,7 +37,6 @@ right = (1, 0)
 
 class Snake:
     def __init__(self, color, controls):
-    def __init__(self, color, controls):
         self.color = color
         self.controls = controls
         self.controls = controls
